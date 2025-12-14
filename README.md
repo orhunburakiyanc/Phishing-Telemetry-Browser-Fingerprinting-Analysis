@@ -1,57 +1,63 @@
-# Phishing Telemetry & User Fingerprinting Analysis 🕵️‍♂️
+# Phishing Telemetry & Evasion Analysis Framework
 
 ![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat&logo=python)
 ![Framework](https://img.shields.io/badge/Framework-Flask-green?style=flat&logo=flask)
-![Focus](https://img.shields.io/badge/Focus-Security%20Research-red)
-![License](https://img.shields.io/badge/License-MIT-grey)
+![Focus](https://img.shields.io/badge/Focus-Traffic%20Distribution-red)
 
 ## Project Goal
-This project is a **"Purple Team"** research tool designed to reverse-engineer and demonstrate the tracking techniques used in advanced phishing campaigns. 
+This project is a **"Purple Team"** research tool designed to analyze **Traffic Distribution Systems (TDS)** and **Cloaking Techniques** used in advanced phishing campaigns. 
 
-By simulating a malicious telemetry server, it helps security professionals and awareness trainers understand:
-1.  **Email Reconnaissance:** How attackers verify if an email is opened using **Tracking Pixels**.
-2.  **Victim Profiling:** What data (IP, User-Agent, Device Type) is exfiltrated instantly upon a click.
-3.  **Fingerprinting:** How browser configurations are used to track users across sessions.
+Unlike simple tracking pixels, this server implements **active filtering** to distinguish between security scanners (Bots) and real victims (Humans). It demonstrates how attackers bypass automated analysis by serving different content based on the visitor's profile.
 
-## Technical Implementation
-The project uses **Python Flask** to create a lightweight telemetry collector acting as a simulated C2 (Command & Control) endpoint.
+## Key Features (Implemented in `server.py`)
 
-* **1x1 Tracking Pixel:** Serves an invisible 1x1 GIF image to log interaction times and IP addresses without user interaction.
-* **Header Analysis:** Parses HTTP headers to extract OS, Browser Version, and Referrer data.
-* **Logging System:** structured logging of "victim" requests for forensic analysis.
+### 1. Advanced Bot & Scanner Detection
+The system analyzes `User-Agent` strings to identify known security crawlers and sandboxes, including:
+* **Security Vendors:** Microsoft Defender, Barracuda, Proofpoint, Cisco IronPort.
+* **Crawlers:** Googlebot, Bingbot, Slackbot, Twitterbot.
+* **Method Analysis:** Automatically flags `HEAD` requests as non-human traffic.
+
+### 2. Evasion & Cloaking Logic
+Implements conditional response logic to evade detection:
+* **For Bots:** Returns a harmless plain text response (`"Scanning content..."`) to avoid raising alarms in security gateways.
+* **For Humans:** Serves an HTML page with a **JavaScript-based redirect** timer, simulating a legitimate verification process before redirecting to the target.
+
+### 3. True IP Resolution (Proxy Aware)
+Designed to work behind WAFs and Reverse Proxies. It correctly resolves the **Origin IP** of the client by prioritizing:
+* `CF-Connecting-IP` (Cloudflare Support)
+* `X-Forwarded-For` (Standard Proxy)
+* `Remote_Addr` (Direct Connection)
+
+### 4. Forensic Logging
+Telemetry data is recorded in a structured **CSV format** (`click-logs.csv`) for post-incident analysis, capturing:
+* Timestamp & Scenario Name
+* Victim IP & User-Agent
+* Request Method
+* Classification Result (Human vs. Bot)
 
 ## Tech Stack
 * **Language:** Python 3
 * **Web Framework:** Flask
-* **Libraries:** `datetime`, `logging`, `io`
+* **Techniques:** Server-Side Filtering, Header Analysis, CSV Logging
 
 ## Usage
 
-1.  **Clone the repository:**
+1.  **Clone and Install:**
     ```bash
     git clone [https://github.com/orhunburakiyane/Phishing-Telemetry-Analysis-Tool.git](https://github.com/orhunburakiyane/Phishing-Telemetry-Analysis-Tool.git)
-    cd Phishing-Telemetry-Analysis-Tool
-    ```
-
-2.  **Install dependencies:**
-    *(Flask is the only requirement)*
-    ```bash
     pip install flask
     ```
 
-3.  **Run the Telemetry Server:**
+2.  **Run the Server:**
     ```bash
-    python app.py
+    python server.py
     ```
-    *Server will start on `http://0.0.0.0:5000`*
 
-4.  **Test the Tracking:**
-    * Open `http://localhost:5000/tracking_pixel.png` in your browser.
-    * Check the terminal or `victim_logs.txt` to see the captured footprint.
+3.  **Simulate a Campaign:**
+    * **Test as Human:** Open browser to `http://localhost:5000/track/test-campaign`
+    * **Test as Bot:** Use curl: `curl -A "Googlebot" http://localhost:5000/track/test-campaign`
+    * Check `click-logs.csv` to see the different classifications.
 
 ## ⚠️ Legal & Ethical Disclaimer
 **For Educational and Research Purposes Only.**
-This tool is created to demonstrate web tracking risks and improve defense mechanisms. It should never be used for malicious activities, unauthorized surveillance, or on networks where you do not have explicit permission. The author assumes no liability for misuse.
-
-## 📄 License
-Distributed under the MIT License. See `LICENSE` for more information.
+This tool is created to demonstrate evasion techniques used by threat actors to improve detection rules (Blue Team) and awareness training. It should never be used for malicious activities.
